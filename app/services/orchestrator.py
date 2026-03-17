@@ -3,13 +3,14 @@ from typing import List, Dict, Type
 from app.sdk.agent import AgentTask, AgentReport
 from app.agents.base import BaseAgent
 from app.agents.architecture_agent import ArchitectureAgent
-from app.agents.mock_agents import MockSecurityAgent, MockQualityAgent
+from app.agents.security_agent import SecurityAgent
+from app.agents.quality_agent import QualityAgent
 from app.llmProvider.router import LLMRouter
 from app.core.logging import logger
 
 AGENT_REGISTRY: Dict[str, Type[BaseAgent]] = {
-    "security": MockSecurityAgent,
-    "quality": MockQualityAgent,
+    "security": SecurityAgent,
+    "quality": QualityAgent,
     "architecture": ArchitectureAgent
 }
 
