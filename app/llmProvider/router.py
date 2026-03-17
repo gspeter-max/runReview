@@ -7,17 +7,12 @@ from app.core.config import Settings
 from app.llmProvider.clients.groq import GroqClient
 from app.llmProvider.clients.gemini import GeminiClient
 from app.llmProvider.clients.github import GitHubClient
+from app.llmProvider.clients.huggingface import HuggingFaceClient
+from app.llmProvider.clients.openrouter import OpenRouterClient
 
 class LLMRouter(LLMProvider):
-    def __init__(self, config_path: str = None, env_path: str = ".env"):
-        # Prioritize specified env_path, then look in current directory
-        if not os.path.exists(env_path):
-            # Try absolute path in worktree as fallback for specific runners
-            fallback_path = "/Users/apple/project/runReview/.worktrees/multi-provider-llm-gateway/.env"
-            if os.path.exists(fallback_path):
-                env_path = fallback_path
-                
-        self.settings = Settings(_env_file=env_path)
+    def __init__(self, config_path: str = None):
+        self.settings = Settings()
 
         if config_path is None:
             # Default config path relative to this file
@@ -30,7 +25,9 @@ class LLMRouter(LLMProvider):
         client_factory = {
             "groq": (GroqClient, self.settings.GROQ_API_KEY),
             "gemini": (GeminiClient, self.settings.GEMINI_API_KEY),
-            "github": (GitHubClient, self.settings.GITHUB_API_KEY)
+            "github": (GitHubClient, self.settings.GITHUB_API_KEY),
+            "huggingface": (HuggingFaceClient, self.settings.HUGGINGFACE_API_KEY),
+            "openrouter": (OpenRouterClient, self.settings.OPENROUTER_API_KEY)
         }
 
         for p in config['providers']:

@@ -6,9 +6,11 @@ class Settings(BaseSettings):
     GROQ_API_KEY: Optional[SecretStr] = None
     GEMINI_API_KEY: Optional[SecretStr] = None
     GITHUB_API_KEY: Optional[SecretStr] = None
+    HUGGINGFACE_API_KEY: Optional[SecretStr] = None
+    OPENROUTER_API_KEY: Optional[SecretStr] = None
     PROJECT_NAME: str = "CodeAgent"
     
-    @field_validator("GROQ_API_KEY", "GEMINI_API_KEY", "GITHUB_API_KEY", mode="before")
+    @field_validator("GROQ_API_KEY", "GEMINI_API_KEY", "GITHUB_API_KEY", "HUGGINGFACE_API_KEY", "OPENROUTER_API_KEY", mode="before")
     @classmethod
     def empty_string_to_none(cls, v):
         if v == "":
