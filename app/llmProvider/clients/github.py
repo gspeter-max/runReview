@@ -1,10 +1,9 @@
 from app.llmProvider.base import BaseLLMClient
-from app.core.config import settings
 
 class GitHubClient(BaseLLMClient):
     def get_config(self):
         return {
-            "model": "openai/gpt-4o",
-            "api_key": settings.GITHUB_API_KEY,
+            "model": self.model,
+            "api_key": self.api_key.get_secret_value() if self.api_key else None,
             "api_base": "https://models.inference.ai.azure.com"
         }
