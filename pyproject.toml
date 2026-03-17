@@ -9,11 +9,14 @@ dependencies = [
     "groq",
     "python-dotenv",
     "pydantic-settings",
+    "litellm",
+    "PyYAML",
 ]
 
 [project.optional-dependencies]
 test = [
     "pytest",
     "pytest-asyncio",
+    "pytest-mock",
     "httpx",
 ]
