@@ -9,6 +9,8 @@ from app.llmProvider.clients.gemini import GeminiClient
 from app.llmProvider.clients.github import GitHubClient
 from app.llmProvider.clients.huggingface import HuggingFaceClient
 from app.llmProvider.clients.openrouter import OpenRouterClient
+from app.llmProvider.clients.cerebras import CerebrasClient
+from app.llmProvider.clients.sambanova import SambaNovaClient
 
 class LLMRouter(LLMProvider):
     def __init__(self, config_path: str = None):
@@ -25,7 +27,9 @@ class LLMRouter(LLMProvider):
             "gemini": (GeminiClient, settings.GEMINI_API_KEY),
             "github": (GitHubClient, settings.GITHUB_API_KEY),
             "huggingface": (HuggingFaceClient, settings.HUGGINGFACE_API_KEY),
-            "openrouter": (OpenRouterClient, settings.OPENROUTER_API_KEY)
+            "openrouter": (OpenRouterClient, settings.OPENROUTER_API_KEY),
+            "cerebras": (CerebrasClient, settings.CEREBRAS_API_KEY),
+            "sambanova": (SambaNovaClient, settings.SAMBANOVA_API_KEY)
         }
 
         for p in config['providers']:
