@@ -1,25 +1,36 @@
 import yaml
 import os
+from pydantic import SecretStr
 from litellm import Router
 from app.providers.base import LLMProvider
-from app.core.config import settings
+from app.core.config import Settings
 from app.llmProvider.clients.groq import GroqClient
 from app.llmProvider.clients.gemini import GeminiClient
 from app.llmProvider.clients.github import GitHubClient
 
 class LLMRouter(LLMProvider):
-    def __init__(self, config_path: str = None):
+    def __init__(self, config_path: str = None, env_path: str = ".env"):
+        # Prioritize specified env_path, then look in current directory
+        if not os.path.exists(env_path):
+            # Try absolute path in worktree as fallback for specific runners
+            fallback_path = "/Users/apple/project/runReview/.worktrees/multi-provider-llm-gateway/.env"
+            if os.path.exists(fallback_path):
+                env_path = fallback_path
+                
+        self.settings = Settings(_env_file=env_path)
+
         if config_path is None:
+            # Default config path relative to this file
             config_path = os.path.join(os.path.dirname(__file__), "config.yaml")
-            
+
         with open(config_path, 'r') as f:
             config = yaml.safe_load(f)
-            
+
         model_list = []
         client_factory = {
-            "groq": (GroqClient, settings.GROQ_API_KEY),
-            "gemini": (GeminiClient, settings.GEMINI_API_KEY),
-            "github": (GitHubClient, settings.GITHUB_API_KEY)
+            "groq": (GroqClient, self.settings.GROQ_API_KEY),
+            "gemini": (GeminiClient, self.settings.GEMINI_API_KEY),
+            "github": (GitHubClient, self.settings.GITHUB_API_KEY)
         }
 
         for p in config['providers']:

@@ -4,7 +4,7 @@ providers:
     model: groq/llama-3.3-70b-versatile
   - name: gemini
     tier: 2 # Smart
-    model: gemini/gemini-1.5-pro
+    model: gemini/gemini-pro
   - name: github
     tier: 2 # Smart
     model: openai/gpt-4o
