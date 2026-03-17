@@ -11,11 +11,14 @@ dependencies = [
     "pydantic-settings",
     "structlog",
     "tenacity",
+    "litellm",
+    "PyYAML",
 ]
 
 [project.optional-dependencies]
 test = [
     "pytest",
     "pytest-asyncio",
+    "pytest-mock",
     "httpx",
 ]

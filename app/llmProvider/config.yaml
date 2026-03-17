@@ -1,0 +1,11 @@
+providers:
+  - name: groq
+    tier: 1 # Fast
+    model: groq/llama-3.3-70b-versatile
+  - name: gemini
+    tier: 2 # Smart
+    model: gemini/gemini-pro
+  - name: github
+    tier: 2 # Smart
+    model: openai/gpt-4o
+    api_base: https://models.inference.ai.azure.com

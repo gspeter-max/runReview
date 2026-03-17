@@ -3,13 +3,13 @@ from pydantic import BaseModel
 import os
 import uuid
 from app.services.repo_service import RepoService
-from app.providers.groq import GroqProvider
+from app.llmProvider.router import LLMRouter
 from app.agents.architecture_agent import ArchitectureAgent
 
 app = FastAPI()
 repo_service = RepoService()
-llm_provider = GroqProvider()
-arch_agent = ArchitectureAgent(llm_provider)
+llm_router = LLMRouter()
+arch_agent = ArchitectureAgent(llm_router)
 
 class AnalyzeRequest(BaseModel):
     repo_url: str
