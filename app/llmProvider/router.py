@@ -3,7 +3,7 @@ import os
 from pydantic import SecretStr
 from litellm import Router
 from app.providers.base import LLMProvider
-from app.core.config import settings, Settings
+from app.core.config import Settings
 from app.llmProvider.clients.groq import GroqClient
 from app.llmProvider.clients.gemini import GeminiClient
 from app.llmProvider.clients.github import GitHubClient
@@ -17,7 +17,6 @@ class LLMRouter(LLMProvider):
         self.settings = Settings()
         
         if config_path is None:
-            # Default config path relative to this file
             config_path = os.path.join(os.path.dirname(__file__), "config.yaml")
 
         with open(config_path, 'r') as f:
@@ -36,32 +35,55 @@ class LLMRouter(LLMProvider):
 
         for p in config['providers']:
             name = p['name']
+            group = p.get('group', 'medium') # Default to medium
             if name in client_factory:
                 client_cls, api_key = client_factory[name]
                 if api_key:
                     client = client_cls(model=p['model'], api_key=api_key)
                     params = client.get_config()
                     model_list.append({
-                        "model_name": "code-analyzer",
+                        "model_name": group, # Use group name (fast/reasoning/medium)
                         "litellm_params": params
                     })
 
         if not model_list:
             raise ValueError("No valid LLM providers found. Check your API keys and config.yaml.")
 
+        # Configure LiteLLM Router with model groups and cross-group fallbacks
         self.router = Router(
             model_list=model_list,
             routing_strategy="simple-shuffle",
             num_retries=3,
-            timeout=30
+            timeout=30,
+            # If all reasoning models fail, fallback to medium, then fast.
+            fallbacks=[
+                {"reasoning": ["medium", "fast"]},
+                {"medium": ["fast"]},
+                {"fast": ["medium"]}
+            ]
         )
 
-    async def generate(self, prompt: str, system_prompt: str = "") -> str:
+    async def generate(self, prompt: str, system_prompt: str = "", model_group: str = "medium") -> str:
+        """
+        Generates completion using a specific model group.
+        model_group can be: 'fast', 'reasoning', or 'medium'.
+        """
         response = await self.router.acompletion(
-            model="code-analyzer",
+            model=model_group,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt}
             ]
         )
         return response.choices[0].message.content
+
+    async def execute_with_tools(self, messages: list, tools: list, model_group: str = "reasoning"):
+        """
+        Executes a completion with tool calling support.
+        """
+        response = await self.router.acompletion(
+            model=model_group,
+            messages=messages,
+            tools=tools if tools else None
+        )
+        return response.choices[0].message

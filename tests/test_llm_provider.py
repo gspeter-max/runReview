@@ -110,3 +110,27 @@ async def test_router_no_keys(mock_config):
         
         with pytest.raises(ValueError, match="No valid LLM providers found"):
             LLMRouter(config_path=mock_config)
+
+@pytest.mark.asyncio
+async def test_router_execute_with_tools(mocker, mock_config):
+    mock_acompletion = mocker.patch("litellm.acompletion")
+    mock_response = MagicMock()
+    mock_response.choices = [MagicMock(message=MagicMock(content="4"))]
+    mock_acompletion.return_value = mock_response
+
+    with patch("app.llmProvider.router.Settings") as MockSettings:
+        mock_settings = MockSettings.return_value
+        mock_settings.GROQ_API_KEY = SecretStr("k1")
+        mock_settings.GEMINI_API_KEY = SecretStr("k2")
+        mock_settings.CEREBRAS_API_KEY = SecretStr("k3")
+        mock_settings.GITHUB_API_KEY = None
+        mock_settings.SAMBANOVA_API_KEY = None
+        mock_settings.HUGGINGFACE_API_KEY = None
+        mock_settings.OPENROUTER_API_KEY = None
+
+        router = LLMRouter(config_path=mock_config)
+        messages = [{"role": "user", "content": "What is 2+2?"}]
+        tools = [] # empty for basic test
+        result = await router.execute_with_tools(messages, tools)
+        assert result is not None
+        assert result.content is not None
