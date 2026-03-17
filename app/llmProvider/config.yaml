@@ -17,7 +17,7 @@ providers:
     model: openrouter/openrouter/free
   - name: cerebras
     tier: 1 # Fast
-    model: cerebras/llama-3.3-70b
+    model: cerebras/llama3.1-8b
   - name: sambanova
     tier: 2 # Smart / Reasoning
-    model: sambanova/meta-llama/Llama-3.1-405B-Instruct
+    model: sambanova/Meta-Llama-3.3-70B-Instruct

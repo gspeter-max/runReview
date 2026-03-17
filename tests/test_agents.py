@@ -1,6 +1,7 @@
 import pytest
 from app.agents.architecture_agent import ArchitectureAgent
 from app.providers.base import LLMProvider
+from app.sdk.agent import AgentTask
 
 class MockLLMProvider(LLMProvider):
     async def generate(self, prompt: str, system_prompt: str = "") -> str:
@@ -11,9 +12,11 @@ async def test_architecture_agent_analyze():
     provider = MockLLMProvider()
     agent = ArchitectureAgent(provider)
     
+    task = AgentTask(task_id="test-1", agent="architecture", instruction="Analyze arch")
     structure = "src/\n    main.py\nREADME.md"
-    result = await agent.analyze(structure)
+    report = await agent.execute(task, structure)
     
-    assert "System: You are an expert software architect." in result
-    assert "Prompt: Please analyze the following project structure:" in result
-    assert "src/" in result
+    assert "System: You are an expert software architect." in report.summary
+    assert "Prompt: Please analyze the following project structure:" in report.summary
+    assert "src/" in report.summary
+    assert report.agent_name == "architecture"

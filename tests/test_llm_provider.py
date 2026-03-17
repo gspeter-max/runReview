@@ -7,6 +7,10 @@ from app.llmProvider.router import LLMRouter
 from app.llmProvider.clients.groq import GroqClient
 from app.llmProvider.clients.gemini import GeminiClient
 from app.llmProvider.clients.github import GitHubClient
+from app.llmProvider.clients.huggingface import HuggingFaceClient
+from app.llmProvider.clients.openrouter import OpenRouterClient
+from app.llmProvider.clients.cerebras import CerebrasClient
+from app.llmProvider.clients.sambanova import SambaNovaClient
 
 @pytest.fixture
 def mock_config(tmp_path):
@@ -16,7 +20,8 @@ def mock_config(tmp_path):
     content = {
         "providers": [
             {"name": "groq", "tier": 1, "model": "groq/llama-3.3-70b-versatile"},
-            {"name": "gemini", "tier": 2, "model": "gemini/gemini-1.5-pro"}
+            {"name": "gemini", "tier": 2, "model": "gemini/gemini-2.5-flash"},
+            {"name": "cerebras", "tier": 1, "model": "cerebras/llama3.1-8b"}
         ]
     }
     with open(config_file, "w") as f:
@@ -35,22 +40,33 @@ def test_gemini_client_config():
     assert config["model"] == "m2"
     assert config["api_key"] == "k2"
 
-def test_github_client_config():
-    client = GitHubClient(model="m3", api_key=SecretStr("k3"))
+def test_cerebras_client_config():
+    client = CerebrasClient(model="m3", api_key=SecretStr("k3"))
     config = client.get_config()
     assert config["model"] == "m3"
     assert config["api_key"] == "k3"
-    assert config["api_base"] == "https://models.inference.ai.azure.com"
+
+def test_sambanova_client_config():
+    client = SambaNovaClient(model="m4", api_key=SecretStr("k4"))
+    config = client.get_config()
+    assert config["model"] == "m4"
+    assert config["api_key"] == "k4"
 
 @pytest.mark.asyncio
 async def test_router_initialization(mock_config):
-    with patch("app.llmProvider.router.settings") as mock_settings:
+    with patch("app.llmProvider.router.Settings") as MockSettings:
+        mock_settings = MockSettings.return_value
         mock_settings.GROQ_API_KEY = SecretStr("k1")
         mock_settings.GEMINI_API_KEY = SecretStr("k2")
+        mock_settings.CEREBRAS_API_KEY = SecretStr("k3")
         mock_settings.GITHUB_API_KEY = None
+        mock_settings.SAMBANOVA_API_KEY = None
+        mock_settings.HUGGINGFACE_API_KEY = None
+        mock_settings.OPENROUTER_API_KEY = None
         
         router = LLMRouter(config_path=mock_config)
-        assert len(router.router.model_list) == 2
+        # 3 models defined in mock_config and keys provided for all 3
+        assert len(router.router.model_list) == 3
         assert router.router.model_list[0]["litellm_params"]["api_key"] == "k1"
 
 @pytest.mark.asyncio
@@ -65,10 +81,15 @@ async def test_router_failover(mocker, mock_config):
         mock_response 
     ]
     
-    with patch("app.llmProvider.router.settings") as mock_settings:
+    with patch("app.llmProvider.router.Settings") as MockSettings:
+        mock_settings = MockSettings.return_value
         mock_settings.GROQ_API_KEY = SecretStr("k1")
         mock_settings.GEMINI_API_KEY = SecretStr("k2")
+        mock_settings.CEREBRAS_API_KEY = SecretStr("k3")
         mock_settings.GITHUB_API_KEY = None
+        mock_settings.SAMBANOVA_API_KEY = None
+        mock_settings.HUGGINGFACE_API_KEY = None
+        mock_settings.OPENROUTER_API_KEY = None
 
         router = LLMRouter(config_path=mock_config)
         response = await router.generate("test")
@@ -77,10 +98,15 @@ async def test_router_failover(mocker, mock_config):
 
 @pytest.mark.asyncio
 async def test_router_no_keys(mock_config):
-    with patch("app.llmProvider.router.settings") as mock_settings:
+    with patch("app.llmProvider.router.Settings") as MockSettings:
+        mock_settings = MockSettings.return_value
         mock_settings.GROQ_API_KEY = None
         mock_settings.GEMINI_API_KEY = None
+        mock_settings.CEREBRAS_API_KEY = None
         mock_settings.GITHUB_API_KEY = None
+        mock_settings.SAMBANOVA_API_KEY = None
+        mock_settings.HUGGINGFACE_API_KEY = None
+        mock_settings.OPENROUTER_API_KEY = None
         
         with pytest.raises(ValueError, match="No valid LLM providers found"):
             LLMRouter(config_path=mock_config)

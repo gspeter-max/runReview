@@ -3,7 +3,7 @@ import os
 from pydantic import SecretStr
 from litellm import Router
 from app.providers.base import LLMProvider
-from app.core.config import settings
+from app.core.config import settings, Settings
 from app.llmProvider.clients.groq import GroqClient
 from app.llmProvider.clients.gemini import GeminiClient
 from app.llmProvider.clients.github import GitHubClient
@@ -14,6 +14,8 @@ from app.llmProvider.clients.sambanova import SambaNovaClient
 
 class LLMRouter(LLMProvider):
     def __init__(self, config_path: str = None):
+        self.settings = Settings()
+        
         if config_path is None:
             # Default config path relative to this file
             config_path = os.path.join(os.path.dirname(__file__), "config.yaml")
@@ -23,13 +25,13 @@ class LLMRouter(LLMProvider):
 
         model_list = []
         client_factory = {
-            "groq": (GroqClient, settings.GROQ_API_KEY),
-            "gemini": (GeminiClient, settings.GEMINI_API_KEY),
-            "github": (GitHubClient, settings.GITHUB_API_KEY),
-            "huggingface": (HuggingFaceClient, settings.HUGGINGFACE_API_KEY),
-            "openrouter": (OpenRouterClient, settings.OPENROUTER_API_KEY),
-            "cerebras": (CerebrasClient, settings.CEREBRAS_API_KEY),
-            "sambanova": (SambaNovaClient, settings.SAMBANOVA_API_KEY)
+            "groq": (GroqClient, self.settings.GROQ_API_KEY),
+            "gemini": (GeminiClient, self.settings.GEMINI_API_KEY),
+            "github": (GitHubClient, self.settings.GITHUB_API_KEY),
+            "huggingface": (HuggingFaceClient, self.settings.HUGGINGFACE_API_KEY),
+            "openrouter": (OpenRouterClient, self.settings.OPENROUTER_API_KEY),
+            "cerebras": (CerebrasClient, self.settings.CEREBRAS_API_KEY),
+            "sambanova": (SambaNovaClient, self.settings.SAMBANOVA_API_KEY)
         }
 
         for p in config['providers']:
