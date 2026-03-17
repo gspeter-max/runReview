@@ -8,7 +8,7 @@ class GroqProvider(LLMProvider):
 
     async def generate(self, prompt: str, system_prompt: str = "") -> str:
         completion = await self.client.chat.completions.create(
-            model="llama3-8b-8192",
+            model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt}

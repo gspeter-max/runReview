@@ -1,0 +1,17 @@
+# Environments
+.env
+venv/
+env/
+.venv/
+ENV/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+
+# Project specific
+server.log
+/tmp/codeagent/
