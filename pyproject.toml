@@ -1,7 +1,7 @@
 [project]
 name = "runreview"
 version = "0.1.0"
-description = "AI-powered codebase analysis platform"
+description = "AI-powered codebase analysis platform using custom agent orchestration"
 dependencies = [
     "fastapi",
     "uvicorn[standard]",
@@ -9,6 +9,8 @@ dependencies = [
     "groq",
     "python-dotenv",
     "pydantic-settings",
+    "structlog",
+    "tenacity",
 ]
 
 [project.optional-dependencies]
