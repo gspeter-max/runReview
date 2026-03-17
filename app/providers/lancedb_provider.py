@@ -2,7 +2,7 @@ import lancedb
 from typing import List, Dict, Any, Optional
 
 class LanceDBProvider:
-    def __init__(self, uri: str):
+    def __init__(self, uri: str = "/app/data"):
         """
         Initialize the LanceDB provider.
         
