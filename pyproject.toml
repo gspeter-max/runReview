@@ -1,0 +1,19 @@
+[project]
+name = "runreview"
+version = "0.1.0"
+description = "AI-powered codebase analysis platform"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "gitpython",
+    "groq",
+    "python-dotenv",
+    "pydantic-settings",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-asyncio",
+    "httpx",
+]
