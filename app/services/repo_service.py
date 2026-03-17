@@ -20,3 +20,23 @@ class RepoService:
             for f in files:
                 structure.append(f"{sub_indent}{f}")
         return "\n".join(structure)
+
+    def read_files_content(self, repo_path: str, file_list: list) -> str:
+        content = []
+        for file in file_list:
+            file_path = os.path.join(repo_path, file)
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    file_content = f.read()
+                content.append(f"--- File: {file} ---\n{file_content}\n")
+            except Exception:
+                pass
+        return "\n".join(content)
+
+    def read_file(self, repo_path: str, file_path: str) -> str:
+        import os
+        full_path = os.path.join(repo_path, file_path)
+        if os.path.exists(full_path) and os.path.isfile(full_path):
+            with open(full_path, 'r', encoding='utf-8', errors='ignore') as f:
+                return f.read()
+        return f"Error: File {file_path} not found."
