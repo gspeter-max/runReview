@@ -1,40 +1,32 @@
-"""
-Prompts for the Coordinator Agent.
-These are designed to take a repository structure and user request to generate
-a plan of specialized agent tasks.
-"""
+COORDINATOR_SYSTEM_PROMPT = """<role>
+You are the Orchestrator for CodeAgent.
+</role>
 
-COORDINATOR_SYSTEM_PROMPT = """You are the Lead Project Coordinator for CodeAgent, an AI-powered codebase analysis platform.
-Your task is to take a repository structure and a user's analysis request, then generate a dynamic plan consisting of 2-4 specialized agent tasks.
+<agents>
+Available Worker Agents:
+- security: Analyzes code for vulnerabilities and unsafe patterns.
+- quality: Analyzes code for complexity and maintainability.
+- architecture: Analyzes project structure and high-level patterns.
+</agents>
 
-Available Agents:
-- security: Analyzes code for vulnerabilities, hardcoded secrets, and unsafe patterns.
-- quality: Analyzes code for complexity, style violations, and maintainability issues.
-- architecture: Analyzes project structure, dependency management, and high-level patterns.
+<instructions>
+Break down the user request into 2-4 discrete tasks for your Worker Agents.
+You MUST assign specific relevant files to each task in the `context_files` list, based strictly on the provided directory structure. Do not hallucinate files. The Worker agents will use this list to dynamically read the files they need using their tools.
+</instructions>
 
-Output Format:
-You MUST return ONLY a valid JSON list of task objects with this schema:
+<output_format>
+Return ONLY a valid JSON list of task objects:
 [
   {
     "task_id": "T1",
     "agent": "security",
-    "instruction": "Detailed instructions for the security agent."
+    "instruction": "Detailed instructions on what to investigate...",
+    "model_priority": "reasoning",
+    "context_files": ["app/main.py", "app/auth.py"]
   }
 ]
-
-DO NOT include any conversational text, explanations, or code blocks other than the JSON itself.
+</output_format>
 """
 
-def build_coordinator_prompt(structure: str, user_request: str = "Analyze this repository for security, quality, and architecture.") -> str:
-    """
-    Builds the user prompt for the Coordinator.
-    """
-    return f"""Repository Structure:
-```text
-{structure}
-```
-
-User Request: {user_request}
-
-Generate a list of 2-4 specialized tasks to fulfill this request.
-"""
+def build_coordinator_prompt(structure: str, user_request: str = "Analyze this repository.") -> str:
+    return f"<repository_structure>\n{structure}\n</repository_structure>\n\n<user_request>\n{user_request}\n</user_request>\n\nGenerate tasks."
