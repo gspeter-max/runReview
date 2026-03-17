@@ -13,6 +13,8 @@ dependencies = [
     "tenacity",
     "litellm",
     "PyYAML",
+    "lancedb",
+    "tantivy",
 ]
 
 [project.optional-dependencies]

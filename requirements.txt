@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+gitpython
+groq
+python-dotenv
+pydantic-settings
+structlog
+tenacity
+litellm
+PyYAML
+lancedb
+tantivy
