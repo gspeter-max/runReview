@@ -1,5 +1,7 @@
 import litellm
+
 from .base import BaseReranker, RerankResult
+
 
 class VoyageReranker(BaseReranker):
     def __init__(self, api_key: str):
@@ -12,12 +14,14 @@ class VoyageReranker(BaseReranker):
             query=query,
             documents=documents,
             top_n=top_n,
-            api_key=self.api_key
+            api_key=self.api_key,
+            timeout=15.0
         )
-        
+
         # litellm's arerank returns an object that typically has a `.results` attribute
         results = [
             RerankResult(index=r["index"], score=r["relevance_score"])
             for r in response.results
         ]
         return results
+

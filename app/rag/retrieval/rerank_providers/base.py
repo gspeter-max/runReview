@@ -1,6 +1,12 @@
 from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+
+
+class RerankerError(Exception):
+    """Base exception for reranker failures."""
+    pass
 
 @dataclass
 class RerankResult:

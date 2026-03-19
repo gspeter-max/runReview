@@ -1,5 +1,6 @@
 import logging
-from .base import BaseReranker, RerankResult
+
+from .base import BaseReranker, RerankResult, RerankerError
 
 logger = logging.getLogger(__name__)
 
@@ -17,5 +18,6 @@ class RerankerRouter(BaseReranker):
                 logger.warning(f"{provider.__class__.__name__} failed: {str(e)}. Falling back...", exc_info=True)
                 last_error = e
                 continue
-        
-        raise Exception(f"All rerankers failed. Last error: {str(last_error)}")
+
+        raise RerankerError(f"All rerankers failed. Last error: {str(last_error)}")
+
