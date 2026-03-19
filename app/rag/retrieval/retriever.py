@@ -1,52 +1,125 @@
-from app.core.config import settings
+"""Main retrieval interface for querying the codebase."""
 
-from .rerank_providers.base import BaseReranker, RerankResult
-from .rerank_providers.cloudflare import CloudflareReranker
-from .rerank_providers.router import RerankerRouter
-from .rerank_providers.voyage import VoyageReranker
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any
+
+from app.rag.config import Settings
+from app.rag.embedding import EmbedderFactory, BaseEmbedder
+from app.rag.storage import LanceDBStore
+from app.rag.utils import get_logger
+
+from .hybrid import HybridSearcher
+from .reranker import Reranker
+
+logger = get_logger(__name__)
+
+
+@dataclass
+class RetrievalResult:
+    """A single retrieval result."""
+
+    chunk_id: str
+    content: str
+    contextualized_content: str
+    context: str
+    score: float
+    file_path: str
+    relative_path: str
+    language: str
+    start_line: int
+    end_line: int
+    structure_name: str
+    structure_kind: str
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class CodeRetriever:
-    def __init__(self):
-        self.router = self._initialize_router()
+    """
+    High-level retrieval interface combining:
+    - Vector search (semantic)
+    - Full-text search (BM25 keyword)
+    - Hybrid fusion
+    - Re-ranking
+    """
 
-    def _initialize_router(self) -> RerankerRouter:
-        providers: list[BaseReranker] = []
+    def __init__(self, settings: Settings) -> None:
+        self._settings = settings
+        self._store = LanceDBStore(settings)
+        self._embedder = EmbedderFactory.create(settings)
+        self._hybrid = HybridSearcher(settings)
+        self._reranker = Reranker(settings) if settings.retrieval.use_reranking else None
+        self._top_k = settings.retrieval.top_k
+        self._rerank_top_k = settings.retrieval.rerank_top_k
 
-        # Primary: Cloudflare (if configured)
-        if settings.CLOUDFLARE_ACCOUNT_ID and settings.CLOUDFLARE_API_TOKEN:
-            providers.append(
-                CloudflareReranker(
-                    account_id=settings.CLOUDFLARE_ACCOUNT_ID.get_secret_value(),
-                    api_token=settings.CLOUDFLARE_API_TOKEN.get_secret_value()
-                )
-            )
+    async def retrieve(
+        self,
+        query: str,
+        top_k: int | None = None,
+        language_filter: str | None = None,
+        file_filter: str | None = None,
+    ) -> list[RetrievalResult]:
+        """
+        Retrieve relevant code chunks for a query.
+        
+        Args:
+            query: Natural language query or code snippet
+            top_k: Number of results to return
+            language_filter: Filter by programming language
+            file_filter: Filter by file path pattern
+        """
+        effective_top_k = top_k or self._rerank_top_k
 
-        # Fallback: Voyage (if configured)
-        if settings.VOYAGE_API_KEY:
-            providers.append(
-                VoyageReranker(api_key=settings.VOYAGE_API_KEY.get_secret_value())
-            )
+        # Build filter
+        filters: list[str] = []
+        if language_filter:
+            filters.append(f'language = "{language_filter}"')
+        if file_filter:
+            filters.append(f'relative_path LIKE "%{file_filter}%"')
+        filter_sql = " AND ".join(filters) if filters else None
 
-        return RerankerRouter(providers=providers)
+        # Embed query
+        query_vector = await self._embedder.embed_query(query)
 
-    async def retrieve_and_rerank(
-        self, query: str, documents: list[str], top_n: int = 5
-    ) -> list[RerankResult]:
-        if not documents:
-            return []
+        # Vector search
+        vector_results = self._store.search_vector(
+            query_vector, top_k=self._top_k, filter_sql=filter_sql
+        )
 
-        if not self.router.providers:
-            raise RuntimeError(
-                "No reranker providers (Cloudflare or Voyage) are configured. "
-                "Please set CLOUDFLARE_API_TOKEN or VOYAGE_API_KEY in your environment/settings."
-            )
+        # Full-text search
+        fts_results = self._store.search_fts(query, top_k=self._top_k)
 
-        results = await self.router.rerank(query, documents, top_n)
+        # Hybrid fusion
+        fused = self._hybrid.fuse(vector_results, fts_results, top_k=self._top_k)
 
-        # Optionally attach the original text back to the result if needed
-        for result in results:
-            if result.index < len(documents):
-                result.text = documents[result.index]
+        # Convert to RetrievalResult
+        results = [self._to_result(r) for r in fused]
 
-        return results
+        # Re-rank
+        if self._reranker and results:
+            results = await self._reranker.rerank(query, results, top_k=effective_top_k)
+
+        return results[:effective_top_k]
+
+    def _to_result(self, raw: dict[str, Any]) -> RetrievalResult:
+        """Convert raw LanceDB result to RetrievalResult."""
+        return RetrievalResult(
+            chunk_id=raw.get("chunk_id", ""),
+            content=raw.get("content", ""),
+            contextualized_content=raw.get("contextualized_content", ""),
+            context=raw.get("context", ""),
+            score=raw.get("_score", raw.get("_distance", 0.0)),
+            file_path=raw.get("file_path", ""),
+            relative_path=raw.get("relative_path", ""),
+            language=raw.get("language", ""),
+            start_line=raw.get("start_line", 0),
+            end_line=raw.get("end_line", 0),
+            structure_name=raw.get("structure_name", ""),
+            structure_kind=raw.get("structure_kind", ""),
+            metadata={
+                "chunk_index": raw.get("chunk_index", 0),
+                "parent_structure": raw.get("parent_structure", ""),
+                "token_count": raw.get("token_count", 0),
+            },
+        )

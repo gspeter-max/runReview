@@ -55,6 +55,8 @@ class ContextualRetriever:
         """
         if not self._enabled:
             logger.info("contextual_retrieval_disabled")
+            for chunk in chunks:
+                chunk.contextualized_content = chunk.content
             return chunks
 
         logger.info("enriching_chunks", total_chunks=len(chunks))
@@ -80,6 +82,9 @@ class ContextualRetriever:
         # Apply contexts to chunks
         for chunk, context in zip(chunks, contexts):
             chunk.context = context
+            chunk.contextualized_content = (
+                f"{context}\n\n---\n\n{chunk.content}" if context else chunk.content
+            )
 
         logger.info(
             "chunks_enriched",

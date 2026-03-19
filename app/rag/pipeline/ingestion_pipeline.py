@@ -128,6 +128,10 @@ class IngestionPipeline:
         except Exception as e:
             logger.error("context_generation_failed", error=str(e))
             errors.append(f"Context generation partially failed: {e}")
+            # Continue with unenriched chunks
+            for chunk in chunks:
+                if not chunk.contextualized_content:
+                    chunk.contextualized_content = chunk.content
 
         # 6. Generate embeddings and store for EACH provider in PARALLEL
         logger.info("generating_embeddings_and_storing", total_chunks=len(chunks))
