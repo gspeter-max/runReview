@@ -30,8 +30,8 @@ async def test_orchestrator_handles_agent_crash():
     orchestrator = Orchestrator(mock_provider)
     
     # Force the quality agent to crash by mocking its execute method
-    from app.agents.mock_agents import MockQualityAgent
-    with patch.object(MockQualityAgent, "execute", side_effect=ValueError("Crashed!")):
+    from app.agents.quality_agent import QualityAgent
+    with patch.object(QualityAgent, "execute", side_effect=ValueError("Crashed!")):
         tasks = [
             AgentTask(task_id="1", agent="security", instruction="sec"),
             AgentTask(task_id="2", agent="quality", instruction="qual")

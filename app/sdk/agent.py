@@ -26,6 +26,8 @@ class AgentTask(BaseModel):
     agent: str
     instruction: str
     context_files: List[str] = []
+    model_priority: str = "medium"
+
 
 class AgentDefinition(BaseModel):
     name: str

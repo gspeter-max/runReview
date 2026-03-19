@@ -18,19 +18,37 @@ def test_analyze_endpoint_e2e(monkeypatch):
     # Step 2: Mock LLM Router for all 3 phases
     from app.llmProvider.router import LLMRouter
     
-    async def mock_generate(self, prompt, system_prompt=""):
-        if "Lead Project Coordinator" in system_prompt:
+    async def mock_generate(self, prompt, system_prompt="", **kwargs):
+        if "Orchestrator for CodeAgent" in system_prompt:
             # Planner output
             return '[{"task_id": "T1", "agent": "security", "instruction": "Check sec"}]'
         elif "Architecture Agent" in system_prompt or "software architect" in system_prompt:
             # Architecture agent output
             return "Architecture is clean."
-        elif "Lead Quality Assurance Judge" in system_prompt:
+        elif "Meta-Judge" or "synthesize" in system_prompt:
             # Meta-Judge output
             return '{"executive_summary": "All good.", "health_score": 90, "top_risks": []}'
         return "Generic Response"
 
     monkeypatch.setattr(LLMRouter, "generate", mock_generate)
+
+    class MockMessage:
+        def __init__(self, content):
+            self.content = content
+            self.tool_calls = None
+        def model_dump(self):
+            return {"role": "assistant", "content": self.content}
+
+    async def mock_execute_with_tools(self, messages, tools, model_group):
+        system_content = messages[0]["content"] if messages else ""
+        if "Architecture Agent" in system_content or "software architect" in system_content:
+            return MockMessage("Architecture is clean.")
+        return MockMessage('{"findings": []}')
+        
+    monkeypatch.setattr(LLMRouter, "execute_with_tools", mock_execute_with_tools)
+
+    
+    
     
     # Act
     response = client.post("/analyze", json={"repo_url": "https://github.com/test/test"})

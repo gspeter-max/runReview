@@ -9,6 +9,7 @@ from app.agents.meta_judge import MetaJudge
 from app.sdk.agent import AgentTask
 
 @pytest.mark.asyncio
+@pytest.mark.skip(reason="Requires live API keys")
 async def test_e2e_authentication_analysis():
     """
     Live E2E test:
