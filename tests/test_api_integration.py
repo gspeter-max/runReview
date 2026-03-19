@@ -31,6 +31,10 @@ def test_analyze_endpoint_e2e(monkeypatch):
         return "Generic Response"
 
     monkeypatch.setattr(LLMRouter, "generate", mock_generate)
+    
+    
+    
+    
 
     class MockMessage:
         def __init__(self, content):
