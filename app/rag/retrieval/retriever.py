@@ -34,8 +34,10 @@ class CodeRetriever:
             return []
             
         if not self.router.providers:
-            # If no rerankers are configured, just return the documents with default scores
-            return [RerankResult(index=i, score=1.0 - (i*0.01), text=doc) for i, doc in enumerate(documents[:top_n])]
+            raise RuntimeError(
+                "No reranker providers (Cloudflare or Voyage) are configured. "
+                "Please set CLOUDFLARE_API_TOKEN or VOYAGE_API_KEY in your environment/settings."
+            )
             
         results = await self.router.rerank(query, documents, top_n)
         

@@ -43,3 +43,18 @@ async def test_reranker_router_failover():
         # Verify both providers were called (Cloudflare first, Voyage second)
         mock_cf_post.assert_called_once()
         mock_litellm.assert_called_once()
+
+@pytest.mark.asyncio
+async def test_retriever_raises_error_no_providers():
+    from app.rag.retrieval.retriever import CodeRetriever
+    from app.core.config import settings
+    
+    # Mock settings to have no keys
+    with patch.object(settings, "CLOUDFLARE_API_TOKEN", None), \
+         patch.object(settings, "VOYAGE_API_KEY", None):
+        
+        retriever = CodeRetriever()
+        with pytest.raises(RuntimeError) as exc_info:
+            await retriever.retrieve_and_rerank("query", ["doc1"])
+            
+        assert "No reranker providers" in str(exc_info.value)
