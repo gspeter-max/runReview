@@ -9,6 +9,7 @@ from app.rag.config import Settings
 from app.rag.embedding import EmbedderFactory, BaseEmbedder
 from app.rag.storage import LanceDBStore
 from app.rag.utils import get_logger
+from app.llmProvider.router import LLMRouter
 
 from .hybrid import HybridSearcher
 from .reranker import Reranker
@@ -44,12 +45,16 @@ class CodeRetriever:
     - Re-ranking
     """
 
-    def __init__(self, settings: Settings) -> None:
+    def __init__(self, settings: Settings, router: LLMRouter | None = None) -> None:
         self._settings = settings
         self._store = LanceDBStore(settings)
         self._embedder = EmbedderFactory.create(settings)
         self._hybrid = HybridSearcher(settings)
-        self._reranker = Reranker(settings) if settings.retrieval.use_reranking else None
+        self._reranker = (
+            Reranker(settings, router=router)
+            if settings.retrieval.use_reranking
+            else None
+        )
         self._top_k = settings.retrieval.top_k
         self._rerank_top_k = settings.retrieval.rerank_top_k
 

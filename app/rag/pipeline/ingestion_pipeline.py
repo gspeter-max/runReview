@@ -19,6 +19,7 @@ from app.rag.embedding import EmbedderFactory
 from app.rag.ingestion import CodebaseScanner, ScannedFile
 from app.rag.storage import LanceDBStore
 from app.rag.utils import get_logger
+from app.llmProvider.router import LLMRouter
 
 logger = get_logger(__name__)
 
@@ -45,11 +46,11 @@ class IngestionPipeline:
     - LanceDB multi-collection management
     """
 
-    def __init__(self, settings: Settings) -> None:
+    def __init__(self, settings: Settings, router: LLMRouter | None = None) -> None:
         self._settings = settings
         self._scanner = CodebaseScanner(settings)
         self._chunker = CodeChunker(settings)
-        self._context_retriever = ContextualRetriever(settings)
+        self._context_retriever = ContextualRetriever(settings, router=router)
         self._embedder = EmbedderFactory.create(settings)
 
     async def run(

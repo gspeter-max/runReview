@@ -17,6 +17,7 @@ from app.rag.chunking.models import Chunk
 from app.rag.config import Settings
 from app.rag.ingestion import ScannedFile
 from app.rag.utils import get_logger
+from app.llmProvider.router import LLMRouter
 
 from .context_generator import ContextGenerator
 
@@ -29,9 +30,9 @@ class ContextualRetriever:
     LLM-generated context before embedding.
     """
 
-    def __init__(self, settings: Settings) -> None:
+    def __init__(self, settings: Settings, router: LLMRouter | None = None) -> None:
         self._settings = settings
-        self._generator = ContextGenerator(settings)
+        self._generator = ContextGenerator(settings, router=router)
         self._enabled = settings.context.enabled
 
     async def enrich_chunks(

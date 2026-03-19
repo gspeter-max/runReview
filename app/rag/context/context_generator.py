@@ -5,29 +5,27 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
-import anthropic
-from tenacity import retry, stop_after_attempt, wait_exponential
-
 from app.rag.config import Settings
-from app.rag.utils import get_logger, count_tokens, truncate_to_tokens
+from app.rag.utils import get_logger, truncate_to_tokens
+from app.llmProvider.router import LLMRouter
 
 from .prompts import CONTEXTUAL_RETRIEVAL_PROMPT, CONTEXTUAL_RETRIEVAL_PROMPT_WITH_REPO
+from app.prompts.rag import CONTEXT_GENERATION_SYSTEM_PROMPT
 
 logger = get_logger(__name__)
 
 
 class ContextGenerator:
     """
-    Generates contextual descriptions for chunks using Claude.
+    Generates contextual descriptions for chunks using the configured LLM router.
     
     Implements Anthropic's Contextual Retrieval technique:
     each chunk gets a short LLM-generated description prepended
     that situates it within the broader document/codebase.
     """
 
-    def __init__(self, settings: Settings) -> None:
-        self._client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
-        self._model = settings.context_model
+    def __init__(self, settings: Settings, router: LLMRouter | None = None) -> None:
+        self._router = router or LLMRouter()
         self._max_context_tokens = settings.context.max_context_tokens
         self._batch_size = settings.context.batch_size
         self._max_concurrent = settings.context.max_concurrent
@@ -72,25 +70,18 @@ class ContextGenerator:
 
         return context
 
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=1, max=10),
-    )
     async def _call_llm(self, prompt: str) -> str:
-        """Call Claude to generate context."""
+        """Call the configured LLM via router to generate context."""
         try:
-            response = await self._client.messages.create(
-                model=self._model,
-                max_tokens=self._max_context_tokens,
-                messages=[{"role": "user", "content": prompt}],
+            # Use 'medium' group as default since it contains most models in config.yaml
+            return await self._router.generate(
+                prompt=prompt,
+                system_prompt=CONTEXT_GENERATION_SYSTEM_PROMPT,
+                model_group="medium"
             )
-            return response.content[0].text.strip()
-        except anthropic.RateLimitError:
-            logger.warning("rate_limited", model=self._model)
-            raise
-        except anthropic.APIError as e:
-            logger.error("api_error", error=str(e))
-            raise
+        except Exception as e:
+            logger.error("context_generation_failed", error=str(e))
+            return ""
 
     async def generate_contexts_batch(
         self,

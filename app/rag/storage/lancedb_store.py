@@ -43,23 +43,24 @@ class LanceDBStore:
         self._db = lancedb.connect(self._uri)
         self._table: lancedb.table.Table | None = None
 
-    def initialize(self) -> None:
+    def initialize(self, table_name: str | None = None) -> None:
         """Initialize or connect to the table."""
+        effective_table_name = table_name or self._table_name
         schema = get_schema(self._dimension)
 
-        if self._table_name in self._db.table_names():
-            self._table = self._db.open_table(self._table_name)
+        if effective_table_name in self._db.table_names():
+            self._table = self._db.open_table(effective_table_name)
             logger.info(
                 "table_opened",
-                table=self._table_name,
+                table=effective_table_name,
                 rows=self._table.count_rows(),
             )
         else:
             self._table = self._db.create_table(
-                self._table_name,
+                effective_table_name,
                 schema=schema,
             )
-            logger.info("table_created", table=self._table_name)
+            logger.info("table_created", table=effective_table_name)
 
     def upsert_chunks(self, chunks: list[Chunk]) -> int:
         """
@@ -68,56 +69,44 @@ class LanceDBStore:
         Deletes existing records for the same files, then inserts new ones.
         Returns the number of records inserted.
         """
-        if not self._table:
-            self.initialize()
+        records = []
+        for chunk in chunks:
+            record = chunk.to_dict()
+            record["vector"] = chunk.embedding
+            records.append(record)
+            
+        return self.upsert_chunks_raw(records)
+
+    def upsert_chunks_raw(self, records: list[dict[str, Any]], table_name: str | None = None) -> int:
+        """
+        Upsert raw records (dicts) into LanceDB.
+        
+        If table_name is provided, it initializes that table first.
+        """
+        if table_name or not self._table:
+            self.initialize(table_name)
 
         assert self._table is not None
 
-        # Group chunks by file for efficient deduplication
-        files = set(c.metadata.relative_path for c in chunks)
+        if not records:
+            return 0
+
+        # Group by file for deduplication
+        files = set(r["relative_path"] for r in records)
         
-        # Delete existing records for these files
         for file_path in files:
             try:
                 self._table.delete(f'relative_path = "{file_path}"')
             except Exception:
-                pass  # Table might be empty
+                pass
 
-        # Convert chunks to records
-        records = []
-        for chunk in chunks:
-            if not chunk.embedding:
-                logger.warning("chunk_missing_embedding", chunk_id=chunk.chunk_id)
-                continue
-
-            record = ChunkRecord(
-                chunk_id=chunk.chunk_id,
-                content=chunk.content,
-                contextualized_content=chunk.contextualized_content,
-                context=chunk.context,
-                vector=chunk.embedding,
-                file_path=chunk.metadata.file_path,
-                relative_path=chunk.metadata.relative_path,
-                language=chunk.metadata.language,
-                start_line=chunk.metadata.start_line,
-                end_line=chunk.metadata.end_line,
-                structure_name=chunk.metadata.structure_name,
-                structure_kind=chunk.metadata.structure_kind,
-                parent_structure=chunk.metadata.parent_structure or "",
-                content_hash=chunk.metadata.content_hash,
-                chunk_index=chunk.metadata.chunk_index,
-                total_chunks_in_file=chunk.metadata.total_chunks_in_file,
-                token_count=chunk.token_count,
-            )
-            records.append(record.to_dict())
-
-        if records:
-            self._table.add(records)
-            logger.info(
-                "chunks_upserted",
-                count=len(records),
-                files=len(files),
-            )
+        self._table.add(records)
+        logger.info(
+            "chunks_upserted_raw",
+            count=len(records),
+            files=len(files),
+            table=table_name or self._table_name,
+        )
 
         return len(records)
 

@@ -8,6 +8,7 @@ from app.rag.config import Settings
 from app.rag.retrieval import CodeRetriever
 from app.rag.retrieval.retriever import RetrievalResult
 from app.rag.utils import get_logger
+from app.llmProvider.router import LLMRouter
 
 logger = get_logger(__name__)
 
@@ -52,8 +53,8 @@ class QueryResult:
 class QueryPipeline:
     """Pipeline for querying the indexed codebase."""
 
-    def __init__(self, settings: Settings) -> None:
-        self._retriever = CodeRetriever(settings)
+    def __init__(self, settings: Settings, router: LLMRouter | None = None) -> None:
+        self._retriever = CodeRetriever(settings, router=router)
 
     async def query(
         self,
