@@ -14,7 +14,7 @@ class RerankerRouter(BaseReranker):
                 logger.info(f"Attempting rerank with {provider.__class__.__name__}")
                 return await provider.rerank(query, documents, top_n)
             except Exception as e:
-                logger.warning(f"{provider.__class__.__name__} failed: {str(e)}. Falling back...")
+                logger.warning(f"{provider.__class__.__name__} failed: {str(e)}. Falling back...", exc_info=True)
                 last_error = e
                 continue
         

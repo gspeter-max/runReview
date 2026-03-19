@@ -34,7 +34,7 @@ class CodeRetriever:
             return []
             
         if not self.router.providers:
-            # If no rerankers are configured, just return the documents with dummy scores
+            # If no rerankers are configured, just return the documents with default scores
             return [RerankResult(index=i, score=1.0 - (i*0.01), text=doc) for i, doc in enumerate(documents[:top_n])]
             
         results = await self.router.rerank(query, documents, top_n)

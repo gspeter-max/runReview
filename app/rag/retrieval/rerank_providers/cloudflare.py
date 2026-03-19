@@ -12,7 +12,7 @@ class CloudflareReranker(BaseReranker):
         headers = {"Authorization": f"Bearer {self.api_token}"}
         payload = {"query": query, "documents": documents}
         
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.post(self.url, headers=headers, json=payload)
             resp.raise_for_status()
             data = resp.json()
