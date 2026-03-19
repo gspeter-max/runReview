@@ -70,12 +70,11 @@ class TestProjectAwareness:
     @pytest.mark.asyncio
     async def test_context_generator_includes_mission_in_prompt(self, test_settings) -> None:
         """Verify that ContextGenerator includes project_mission in the LLM prompt."""
-        # We need to mock the anthropic client to see what prompt is sent
-        with patch("anthropic.AsyncAnthropic") as MockAnthropic:
-            mock_client = MagicMock()
-            mock_client.messages.create = AsyncMock()
-            mock_client.messages.create.return_value.content = [MagicMock(text="Result")]
-            MockAnthropic.return_value = mock_client
+        # We need to mock the LLMRouter to see what prompt is sent
+        with patch("app.rag.context.context_generator.LLMRouter") as MockRouter:
+            mock_router_instance = MagicMock()
+            mock_router_instance.generate = AsyncMock(return_value="Generated context")
+            MockRouter.return_value = mock_router_instance
             
             generator = ContextGenerator(test_settings)
             
@@ -89,8 +88,9 @@ class TestProjectAwareness:
             )
             
             # Check the prompt
-            args, kwargs = mock_client.messages.create.call_args
-            prompt = kwargs["messages"][0]["content"]
+            mock_router_instance.generate.assert_called_once()
+            kwargs = mock_router_instance.generate.call_args.kwargs
+            prompt = kwargs["prompt"]
             
             assert "<project_mission>" in prompt
             assert project_mission in prompt
@@ -98,9 +98,10 @@ class TestProjectAwareness:
 
     def test_extract_project_mission(self, test_settings, tmp_path) -> None:
         """Verify the helper that extracts mission from README.md."""
-        retriever = ContextualRetriever(test_settings)
-        
-        readme_content = """
+        with patch("app.rag.context.contextual_retrieval.ContextGenerator"):
+            retriever = ContextualRetriever(test_settings)
+            
+            readme_content = """
 # Project Name
 This is the first paragraph which should be part of the mission.
 It continues here.
@@ -108,11 +109,11 @@ It continues here.
 ## Installation
 Should not be part of the mission.
 """
-        readme_path = tmp_path / "README.md"
-        readme_path.write_text(readme_content)
-        
-        mission = retriever.extract_project_mission(readme_path)
-        
-        assert "This is the first paragraph" in mission
-        assert "Installation" not in mission
-        assert "Project Name" in mission
+            readme_path = tmp_path / "README.md"
+            readme_path.write_text(readme_content)
+            
+            mission = retriever.extract_project_mission(readme_path)
+            
+            assert "This is the first paragraph" in mission
+            assert "Installation" not in mission
+            assert "Project Name" in mission

@@ -8,6 +8,11 @@ class BaseAgent(ABC):
     def __init__(self, provider: LLMRouter):
         self.provider = provider
         self.repo_service = RepoService()
+        
+        from app.rag.config import Settings
+        from app.rag.pipeline.query_pipeline import QueryPipeline
+        self.settings = Settings()
+        self.query_pipeline = QueryPipeline(self.settings, router=self.provider)
 
     async def run_agent_loop(self, system_prompt: str, task_instruction: str, repo_path: str, model_group: str) -> str:
         messages = [
@@ -15,18 +20,23 @@ class BaseAgent(ABC):
             {"role": "user", "content": task_instruction}
         ]
         
-        tools = [{
-            "type": "function",
-            "function": {
-                "name": "read_file",
-                "description": "Read the contents of a specific file in the repository.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {"file_path": {"type": "string"}},
-                    "required": ["file_path"]
+        from app.agents.tools.retrieve import get_retrieve_schema, execute_retrieve
+
+        tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": "read_file",
+                    "description": "Read the contents of a specific file in the repository.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {"file_path": {"type": "string"}},
+                        "required": ["file_path"]
+                    }
                 }
-            }
-        }]
+            },
+            get_retrieve_schema()
+        ]
 
         # Agent Loop (max 5 iterations to prevent infinite loops)
         for _ in range(5):
@@ -46,6 +56,24 @@ class BaseAgent(ABC):
                         "tool_call_id": tool_call.id,
                         "name": tool_call.function.name,
                         "content": content
+                    })
+                elif tool_call.function.name == "search_codebase":
+                    args = json.loads(tool_call.function.arguments)
+                    query = args.get("query", "")
+                    top_k = args.get("top_k", 5)
+                    content = await execute_retrieve(self.query_pipeline, query, top_k)
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
+                        "name": tool_call.function.name,
+                        "content": content
+                    })
+                else:
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
+                        "name": tool_call.function.name,
+                        "content": "Error: Unknown tool."
                     })
         return "Error: Agent loop exceeded maximum iterations."
 

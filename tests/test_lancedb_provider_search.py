@@ -2,8 +2,14 @@ import pytest
 from app.providers.lancedb_provider import LanceDBProvider
 import os
 
-def test_lancedb_hybrid_search(tmp_path):
-    # Setup
+def test_lancedb_hybrid_search(tmp_path, monkeypatch):
+    # Setup custom tmpdir to avoid MacOS /var/folders/ permission issues with Tantivy
+    custom_tmp = tmp_path / "lancedb_tmp"
+    custom_tmp.mkdir()
+    monkeypatch.setenv("TMPDIR", str(custom_tmp))
+    monkeypatch.setenv("TMP", str(custom_tmp))
+    monkeypatch.setenv("TEMP", str(custom_tmp))
+    
     db_path = tmp_path / "lancedb"
     provider = LanceDBProvider(uri=str(db_path))
     
