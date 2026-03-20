@@ -10,12 +10,24 @@ class RepoService:
 
     def get_file_structure(self, path: str) -> str:
         structure = []
+        structure.append("Repository Root/")
+        
         for root, dirs, files in os.walk(path):
             if '.git' in dirs:
                 dirs.remove('.git')
-            level = root.replace(path, '').count(os.sep)
+            if '__pycache__' in dirs:
+                dirs.remove('__pycache__')
+            
+            relative_root = os.path.relpath(root, path)
+            if relative_root == ".":
+                level = 1
+            else:
+                level = relative_root.count(os.sep) + 2
+            
             indent = ' ' * 4 * level
-            structure.append(f"{indent}{os.path.basename(root)}/")
+            if relative_root != ".":
+                structure.append(f"{indent}{os.path.basename(root)}/")
+            
             sub_indent = ' ' * 4 * (level + 1)
             for f in files:
                 structure.append(f"{sub_indent}{f}")
@@ -40,3 +52,18 @@ class RepoService:
             with open(full_path, 'r', encoding='utf-8', errors='ignore') as f:
                 return f.read()
         return f"Error: File {file_path} not found."
+
+    def list_directory(self, repo_path: str, dir_path: str) -> str:
+        full_path = os.path.join(repo_path, dir_path)
+        if not os.path.exists(full_path) or not os.path.isdir(full_path):
+            return f"Error: Directory {dir_path} not found."
+        
+        items = []
+        try:
+            for item in sorted(os.listdir(full_path)):
+                if item.startswith('.'): continue
+                is_dir = os.path.isdir(os.path.join(full_path, item))
+                items.append(f"{'[DIR] ' if is_dir else ''}{item}")
+            return "\n".join(items) if items else "No files found in this directory."
+        except Exception as e:
+            return f"Error listing directory {dir_path}: {str(e)}"
