@@ -13,15 +13,16 @@ class Settings(BaseSettings):
     CLOUDFLARE_ACCOUNT_ID: Optional[SecretStr] = None
     CLOUDFLARE_API_TOKEN: Optional[SecretStr] = None
     VOYAGE_API_KEY: Optional[SecretStr] = None
+    JINA_API_KEY: Optional[SecretStr] = None
     PROJECT_NAME: str = "CodeAgent"
     
-    @field_validator("GROQ_API_KEY", "GEMINI_API_KEY", "GITHUB_API_KEY", "HUGGINGFACE_API_KEY", "OPENROUTER_API_KEY", "CEREBRAS_API_KEY", "SAMBANOVA_API_KEY", "CLOUDFLARE_ACCOUNT_ID", "CLOUDFLARE_API_TOKEN", "VOYAGE_API_KEY", mode="before")
+    @field_validator("GROQ_API_KEY", "GEMINI_API_KEY", "GITHUB_API_KEY", "HUGGINGFACE_API_KEY", "OPENROUTER_API_KEY", "CEREBRAS_API_KEY", "SAMBANOVA_API_KEY", "CLOUDFLARE_ACCOUNT_ID", "CLOUDFLARE_API_TOKEN", "VOYAGE_API_KEY", "JINA_API_KEY", mode="before")
     @classmethod
     def empty_string_to_none(cls, v):
         if v == "":
             return None
         return v
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore", env_file_encoding='utf-8')
+    model_config = SettingsConfigDict(env_file="/Users/apple/project/runReview/.env", extra="ignore", env_file_encoding='utf-8')
 
 settings = Settings()

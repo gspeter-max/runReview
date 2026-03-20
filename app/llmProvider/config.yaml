@@ -1,23 +1,23 @@
 providers:
   - name: groq
-    tier: 1 # Fast
+    tier: 1
     model: groq/llama-3.3-70b-versatile
   - name: gemini
-    tier: 2 # Smart
-    model: gemini/gemini-2.5-flash
+    tier: 2
+    model: gemini/gemini-2.0-flash
   - name: github
-    tier: 2 # Smart
-    model: openai/gpt-4o
+    tier: 3
+    model: gpt-4o
     api_base: https://models.inference.ai.azure.com
   - name: huggingface
-    tier: 3 # Open Source / Alternative
+    tier: 1
     model: huggingface/meta-llama/Meta-Llama-3-8B-Instruct
   - name: openrouter
-    tier: 3 # Open Source / Alternative
-    model: openrouter/openrouter/free
+    tier: 1
+    model: openrouter/google/gemini-2.0-flash-exp:free
   - name: cerebras
-    tier: 1 # Fast
+    tier: 1
     model: cerebras/llama3.1-8b
   - name: sambanova
-    tier: 2 # Smart / Reasoning
+    tier: 3
     model: sambanova/Meta-Llama-3.3-70B-Instruct

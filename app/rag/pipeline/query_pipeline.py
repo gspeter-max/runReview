@@ -60,7 +60,7 @@ class QueryPipeline:
         self,
         query: str,
         top_k: int = 5,
-        language: str | None = None,
+        language_filter: str | None = None,
         file_pattern: str | None = None,
     ) -> QueryResult:
         """
@@ -69,7 +69,7 @@ class QueryPipeline:
         Args:
             query: Natural language query or code snippet
             top_k: Number of results
-            language: Optional language filter
+            language_filter: Optional language filter
             file_pattern: Optional file path pattern filter
         """
         logger.info("query_start", query=query[:100], top_k=top_k)
@@ -77,7 +77,7 @@ class QueryPipeline:
         results = await self._retriever.retrieve(
             query=query,
             top_k=top_k,
-            language_filter=language,
+            language_filter=language_filter,
             file_filter=file_pattern,
         )
 

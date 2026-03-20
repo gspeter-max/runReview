@@ -12,9 +12,14 @@ def mock_dependencies():
     with patch("app.main.repo_service") as mock_repo, \
          patch("app.main.coordinator") as mock_coord, \
          patch("app.main.orchestrator") as mock_orch, \
-         patch("app.main.meta_judge") as mock_judge:
+         patch("app.main.meta_judge") as mock_judge, \
+         patch("app.main.ingestion_pipeline") as mock_ingest:
         
         mock_repo.get_file_structure.return_value = "mocked structure"
+        
+        # Mock ingestion
+        from app.rag.pipeline.ingestion_pipeline import IngestionStats
+        mock_ingest.run = AsyncMock(return_value=IngestionStats(0,0,0,0,0,0,[]))
         
         # Mock coordinator plan
         task = AgentTask(task_id="t1", agent="test", instruction="test task")

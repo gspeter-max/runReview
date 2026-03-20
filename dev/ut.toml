@@ -1,0 +1,8 @@
+description = "Activate ultrathinking mode for the current problem"
+
+prompt = """
+Activate the ultrathinking skill and apply the full protocol to this
+problem. Do not skip any phase. Take as long as needed.
+
+Problem: {{args}}
+"""

@@ -13,7 +13,17 @@ def test_analyze_endpoint_e2e(monkeypatch):
     # Step 1: Mock repo_service.clone_repo to do nothing
     from app.services.repo_service import RepoService
     monkeypatch.setattr(RepoService, "clone_repo", lambda *args: None)
-    monkeypatch.setattr(RepoService, "get_file_structure", lambda *args: "mock-structure")
+    
+    def mock_get_file_structure(self, path, max_depth=None, max_tokens=None):
+        return "mock-structure"
+    monkeypatch.setattr(RepoService, "get_file_structure", mock_get_file_structure)
+    
+    # Mock ingestion pipeline
+    from app.main import ingestion_pipeline
+    from app.rag.pipeline.ingestion_pipeline import IngestionStats
+    async def mock_ingestion_run(*args, **kwargs):
+        return IngestionStats(0, 0, 0, 0, 0, 0.1, [])
+    monkeypatch.setattr(ingestion_pipeline, "run", mock_ingestion_run)
     
     # Step 2: Mock LLM Router for all 3 phases
     from app.llmProvider.router import LLMRouter

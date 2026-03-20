@@ -39,7 +39,7 @@ class ChunkingSettings(BaseSettings):
 
 
 class ContextSettings(BaseSettings):
-    enabled: bool = True
+    enabled: bool = False
     max_context_tokens: int = 200
     cache_contexts: bool = True
     batch_size: int = 20
@@ -47,10 +47,10 @@ class ContextSettings(BaseSettings):
 
 
 class EmbeddingSettings(BaseSettings):
-    provider: EmbeddingProvider = EmbeddingProvider.OPENAI
-    model: str = "text-embedding-3-small"
+    provider: EmbeddingProvider = EmbeddingProvider.VOYAGE
+    model: str = "voyage-code-2"
     dimension: int = 1536
-    batch_size: int = 100
+    batch_size: int = 72
     max_retries: int = 3
     retry_delay: float = 1.0
 
@@ -74,9 +74,8 @@ class Settings(BaseSettings):
     """Root application settings."""
 
     # API Keys
-    anthropic_api_key: str = Field(default="", alias="ANTHROPIC_API_KEY")
     openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
-    voyageai_api_key: str = Field(default="", alias="VOYAGEAI_API_KEY")
+    voyageai_api_key: str = Field(default="", alias="VOYAGE_API_KEY")
 
     # Context model
     context_model: str = Field(default="claude-sonnet-4-20250514", alias="CONTEXT_MODEL")
@@ -106,14 +105,6 @@ class Settings(BaseSettings):
                 if key not in values or values[key] is None:
                     values[key] = val
         return values
-
-    @field_validator("anthropic_api_key")
-    @classmethod
-    def validate_anthropic_key(cls, v: str) -> str:
-        if not v:
-            # Anthropic key is required for contextual retrieval, but we might be using other features.
-            pass
-        return v
 
 
 @lru_cache(maxsize=1)

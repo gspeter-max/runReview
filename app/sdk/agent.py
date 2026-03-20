@@ -1,5 +1,5 @@
-from pydantic import BaseModel, Field
-from typing import List, Optional, Any, Dict
+from pydantic import BaseModel, Field, field_validator
+from typing import List, Optional, Any, Dict, Literal
 from enum import Enum
 
 class Severity(str, Enum):
@@ -26,7 +26,19 @@ class AgentTask(BaseModel):
     agent: str
     instruction: str
     context_files: List[str] = []
-    model_priority: str = "medium"
+    model_priority: Literal["fast", "medium", "reasoning"] = "medium"
+
+    @field_validator("model_priority", mode="before")
+    @classmethod
+    def validate_model_priority(cls, v: Any) -> str:
+        if not isinstance(v, str):
+            return "medium"
+        
+        v_lower = v.lower().strip()
+        valid_groups = ["fast", "medium", "reasoning"]
+        if v_lower not in valid_groups:
+            return "medium"
+        return v_lower
 
 
 class AgentDefinition(BaseModel):

@@ -7,16 +7,17 @@ import json
 class ArchitectureAgent(BaseAgent):
     """Specialized agent for architectural analysis."""
     
-    async def execute(self, task: AgentTask, structure: str) -> AgentReport:
+    async def execute(self, task: AgentTask, repo_path: str) -> AgentReport:
         """
-        Analyze the structure provided in the task.
-        In this implementation, structure is passed as repo_path context.
+        Analyze the repository structure for architectural patterns.
         """
         logger.info("ArchitectureAgent starting", task_id=task.task_id)
+        
+        # BOX vs GIFT fix: Get real file structure instead of raw path
+        structure = self.repo_service.get_file_structure(repo_path, max_depth=4)
         prompt = build_architecture_prompt(structure)
         
         # In a real agent, we might want to return structured JSON as well.
-        # For MVP, we'll wrap the text summary.
         raw_summary = await self.provider.generate(
             prompt=prompt, 
             system_prompt=ARCHITECTURE_SYSTEM_PROMPT

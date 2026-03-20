@@ -92,13 +92,15 @@ class LanceDBStore:
             return 0
 
         # Group by file for deduplication
-        files = set(r["relative_path"] for r in records)
+        files = list(set(r["relative_path"] for r in records))
         
-        for file_path in files:
+        # Batch delete for all files to be updated
+        if files:
             try:
-                self._table.delete(f'relative_path = "{file_path}"')
-            except Exception:
-                pass
+                files_str = '", "'.join(files)
+                self._table.delete(f'relative_path IN ("{files_str}")')
+            except Exception as e:
+                logger.warning("batch_delete_failed", error=str(e))
 
         self._table.add(records)
         logger.info(
@@ -208,9 +210,11 @@ class LanceDBStore:
         assert self._table is not None
 
         try:
-            df = self._table.to_pandas()[["relative_path", "content_hash"]].drop_duplicates()
-            return dict(zip(df["relative_path"], df["content_hash"]))
-        except Exception:
+            # Avoid pandas, use arrow directly
+            results = self._table.to_arrow().select(["relative_path", "content_hash"]).to_pylist()
+            return {r["relative_path"]: r["content_hash"] for r in results}
+        except Exception as e:
+            logger.warning("get_hashes_failed", error=str(e))
             return {}
 
     def delete_file_chunks(self, relative_path: str) -> None:

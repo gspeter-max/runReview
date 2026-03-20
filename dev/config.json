@@ -1,0 +1,16 @@
+{
+  "modelConfigs": {
+    "customAliases": {
+      "ultra": {
+        "extends": "chat-base-3",
+        "modelConfig": {
+          "generateContentConfig": {
+            "thinkingConfig": {
+              "thinkingLevel": "HIGH"
+            }
+          }
+        }
+      }
+    }
+  }
+}
