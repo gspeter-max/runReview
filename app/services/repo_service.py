@@ -8,7 +8,7 @@ class RepoService:
             shutil.rmtree(target_path)
         Repo.clone_from(repo_url, target_path)
 
-    def get_file_structure(self, path: str, max_depth: int = 4, max_tokens: int = 4000) -> str:
+    def get_file_structure(self, path: str, max_depth: int = 3, max_tokens: int = 4000) -> str:
         """
         Generates a tree-like string of the repository structure.
         max_depth: limit how deep to recurse (None for unlimited)
